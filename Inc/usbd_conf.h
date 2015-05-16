@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * @file           : usbd_conf.h
-  * @date           : 15/05/2015 07:37:45  
+  * @date           : 15/05/2015 19:29:08  
   * @version        : v1.0_Cube
   * @brief          : Header for usbd_conf file.
   ******************************************************************************
@@ -67,6 +67,8 @@
 #define USBD_DEBUG_LEVEL     0
 /*---------- -----------*/
 #define USBD_SELF_POWERED     1
+/*---------- -----------*/
+#define USBD_CDC_INTERVAL     1000
 /****************************************/
 /* #define for FS and HS identification */
 #define DEVICE_FS 		0
