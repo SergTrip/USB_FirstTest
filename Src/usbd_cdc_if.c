@@ -60,8 +60,8 @@
   /* USER CODE BEGIN 1 */
 /* Define size for the receive and transmit buffer over CDC */
 /* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  512
-#define APP_TX_DATA_SIZE  512
+#define APP_RX_DATA_SIZE  64
+#define APP_TX_DATA_SIZE  64
   /* USER CODE END 1 */  
 /**
   * @}
@@ -239,6 +239,8 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 7 */ 
+		USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+	
   return (USBD_OK);
   /* USER CODE END 7 */ 
 }
@@ -258,8 +260,22 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 8 */ 
-  USBD_CDC_SetTxBuffer(hUsbDevice_0, UserTxBufferFS, Len);   
-  result = USBD_CDC_TransmitPacket(hUsbDevice_0);
+	
+	// Если устройство не подключено 
+	if( hUsbDevice_0 == 0 )
+		return USBD_FAIL;
+		
+	// Скопировать буффер
+	memcpy ( UserTxBufferFS, Buf, Len );
+	
+	// Отправить буфер
+	USBD_CDC_SetTxBuffer(hUsbDevice_0, UserTxBufferFS, Len);   
+	
+	// USBD_CDC_SetTxBuffer(hUsbDevice_0, Buf, Len);	
+	
+	// Получить ответ
+	result = USBD_CDC_TransmitPacket(hUsbDevice_0);	
+			
   /* USER CODE END 8 */ 
   return result;
 }

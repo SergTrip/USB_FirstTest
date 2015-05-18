@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * File Name          : main.c
-  * Date               : 15/05/2015 19:29:09
+  * Date               : 18/05/2015 01:27:57
   * Description        : Main program body
   ******************************************************************************
   *
@@ -34,6 +34,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include "spi.h"
 #include "tim.h"
 #include "usb_device.h"
 #include "gpio.h"
@@ -41,6 +42,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN 0 */
+#include "usbd_cdc_if.h"
+
+// Массив тестовых данных
+uint8_t testDataToSend[8];
 
 /* USER CODE END 0 */
 
@@ -69,19 +74,34 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_SPI1_Init();
   MX_TIM7_Init();
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN 2 */
+	
+	for (uint8_t i = 0; i < 8; i++)
+  {
+    testDataToSend[i] = i;
+  }
+	
+	// Запустить таймер
+	HAL_TIM_Base_Start_IT( &htim7 );
 
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN 3 */
+ 
   /* Infinite loop */
   while (1)
   {
-
+		/*
+		HAL_Delay(1000);
+		
+    CDC_Transmit_FS(testDataToSend, 8);
+		*/
   }
+	
   /* USER CODE END 3 */
 
 }
@@ -120,6 +140,16 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	// Меняем состояние на противоположное
+	HAL_GPIO_TogglePin ( GPIOD, GPIO_PIN_13 );
+			
+	int8_t res = CDC_Transmit_FS(testDataToSend, 8);
+
+	// Запустить таймер
+	// HAL_TIM_Base_Start_IT( &htim7 );
+}
 
 /* USER CODE END 4 */
 

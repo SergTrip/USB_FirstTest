@@ -1,8 +1,9 @@
 /**
   ******************************************************************************
-  * @file    stm32f4xx_it.h
-  * @date    18/05/2015 01:27:57
-  * @brief   This file contains the headers of the interrupt handlers.
+  * File Name          : SPI.h
+  * Date               : 18/05/2015 01:27:54
+  * Description        : This file provides code for the configuration
+  *                      of the SPI instances.
   ******************************************************************************
   *
   * COPYRIGHT(c) 2015 STMicroelectronics
@@ -31,31 +32,31 @@
   *
   ******************************************************************************
   */
-
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __STM32F4xx_IT_H
-#define __STM32F4xx_IT_H
-
+#ifndef __spi_H
+#define __spi_H
 #ifdef __cplusplus
  extern "C" {
-#endif 
+#endif
 
 /* Includes ------------------------------------------------------------------*/
-/* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
+#include "stm32f4xx_hal.h"
 
-void TIM7_IRQHandler(void);
-void EXTI1_IRQHandler(void);
-void EXTI0_IRQHandler(void);
-void SysTick_Handler(void);
-void OTG_FS_IRQHandler(void);
+extern SPI_HandleTypeDef hspi1;
+
+void MX_SPI1_Init(void);
 
 #ifdef __cplusplus
 }
 #endif
+#endif /*__ spi_H */
 
-#endif /* __STM32F4xx_IT_H */
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * File Name          : TIM.c
-  * Date               : 15/05/2015 19:29:07
+  * Date               : 18/05/2015 01:27:54
   * Description        : This file provides code for the configuration
   *                      of the TIM instances.
   ******************************************************************************
@@ -49,10 +49,12 @@ void MX_TIM7_Init(void)
   TIM_MasterConfigTypeDef sMasterConfig;
 
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 0;
+  htim7.Init.Prescaler = 671;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 0;
+  htim7.Init.Period = 62499;
   HAL_TIM_Base_Init(&htim7);
+
+  // HAL_TIM_OnePulse_Init(&htim7, TIM_OPMODE_SINGLE);
 
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
@@ -67,6 +69,12 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
   {
     /* Peripheral clock enable */
     __TIM7_CLK_ENABLE();
+
+    /* Peripheral interrupt init*/
+    /* Sets the priority grouping field */
+    HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_0);
+    HAL_NVIC_SetPriority(TIM7_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM7_IRQn);
   }
 }
 
@@ -77,6 +85,9 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
   {
     /* Peripheral clock disable */
     __TIM7_CLK_DISABLE();
+
+    /* Peripheral interrupt Deinit*/
+    HAL_NVIC_DisableIRQ(TIM7_IRQn);
   }
 } 
 
