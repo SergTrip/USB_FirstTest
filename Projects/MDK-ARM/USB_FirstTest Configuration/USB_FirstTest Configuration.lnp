@@ -32,6 +32,9 @@
 "usb_firsttest configuration\usbd_ioreq.o"
 "usb_firsttest configuration\usbd_cdc.o"
 "usb_firsttest configuration\startup_stm32f407xx.o"
+"usb_firsttest configuration\lis302dl.o"
+"usb_firsttest configuration\lis3dsh.o"
+"usb_firsttest configuration\stm32f4_discovery_accelerometer.o"
 --library_type=microlib --strict --scatter "USB_FirstTest Configuration\USB_FirstTest Configuration.sct"
 
 --diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols

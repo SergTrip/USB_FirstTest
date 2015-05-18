@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * File Name          : main.c
-  * Date               : 18/05/2015 01:27:57
+  * Date               : 18/05/2015 05:00:17
   * Description        : Main program body
   ******************************************************************************
   *
@@ -43,9 +43,28 @@
 
 /* USER CODE BEGIN 0 */
 #include "usbd_cdc_if.h"
+#include "stm32f4_discovery_accelerometer.h"
 
 // Массив тестовых данных
-uint8_t testDataToSend[8];
+int16_t testDataToSend[4];
+
+/*############################# ACCELEROMETER ################################*/
+/* Read/Write command */
+#define READWRITE_CMD                     ((uint8_t)0x80) 
+/* Multiple byte read/write command */ 
+#define MULTIPLEBYTE_CMD                  ((uint8_t)0x40)
+/* Dummy Byte Send by the SPI Master device in order to generate the Clock to the Slave device */
+#define DUMMY_BYTE                        ((uint8_t)0x00)
+
+/**
+  * @brief  ACCELEROMETER Interface pins
+  */
+#define ACCELERO_CS_PIN                        GPIO_PIN_3                 /* PE.03 */
+#define ACCELERO_CS_GPIO_PORT                  GPIOE                      /* GPIOE */
+
+/* Chip Select macro definition */
+#define ACCELERO_CS_LOW()       HAL_GPIO_WritePin( ACCELERO_CS_GPIO_PORT, ACCELERO_CS_PIN, GPIO_PIN_RESET	)
+#define ACCELERO_CS_HIGH()      HAL_GPIO_WritePin( ACCELERO_CS_GPIO_PORT, ACCELERO_CS_PIN, GPIO_PIN_SET		)
 
 /* USER CODE END 0 */
 
@@ -80,9 +99,20 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 	
-	for (uint8_t i = 0; i < 8; i++)
+//	for (uint8_t i = 0; i < 4; i++)
+//  {
+//    testDataToSend[i] = i;
+//  }
+
+	testDataToSend[0] = 0xAA;
+	
+	HAL_SPI_MspInit( &hspi1 );
+	
+	  /* Initialize Accelerometer MEMS */
+  if(BSP_ACCELERO_Init() != HAL_OK)
   {
-    testDataToSend[i] = i;
+    /* Initialization Error */
+    while(1){}
   }
 	
 	// Запустить таймер
@@ -95,11 +125,7 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
-		/*
-		HAL_Delay(1000);
-		
-    CDC_Transmit_FS(testDataToSend, 8);
-		*/
+
   }
 	
   /* USER CODE END 3 */
@@ -144,11 +170,105 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	// Меняем состояние на противоположное
 	HAL_GPIO_TogglePin ( GPIOD, GPIO_PIN_13 );
+	
+	/* Read Acceleration*/
+	BSP_ACCELERO_GetXYZ( (testDataToSend+1) );
 			
-	int8_t res = CDC_Transmit_FS(testDataToSend, 8);
+	int8_t res = CDC_Transmit_FS( (uint8_t*)testDataToSend, 8 );
 
 	// Запустить таймер
 	// HAL_TIM_Base_Start_IT( &htim7 );
+}
+
+/**
+  * @brief  Sends a Byte through the SPI interface and return the Byte received 
+  *         from the SPI bus.
+  * @param  Byte: Byte send.
+  * @retval The received byte value
+  */
+static uint8_t SPIx_WriteRead(uint8_t Byte)
+{
+  uint8_t receivedbyte = 0;
+  
+  /* Send a Byte through the SPI peripheral */
+  /* Read byte from the SPI bus */
+  if( HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) &Byte, (uint8_t*) &receivedbyte, 1, 0x1000 ) != HAL_OK)
+  {
+    // SPIx_Error();
+  }
+  
+  return receivedbyte;
+}
+
+/**
+  * @brief  Writes one byte to the Accelerometer.
+  * @param  pBuffer: pointer to the buffer containing the data to be written to the Accelerometer.
+  * @param  WriteAddr: Accelerometer's internal address to write to.
+  * @param  NumByteToWrite: Number of bytes to write.
+  * @retval None
+  */
+void ACCELERO_IO_Write(uint8_t *pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite)
+{
+  /* Configure the MS bit: 
+     - When 0, the address will remain unchanged in multiple read/write commands.
+     - When 1, the address will be auto incremented in multiple read/write commands.
+  */
+  if(NumByteToWrite > 0x01)
+  {
+    WriteAddr |= (uint8_t)MULTIPLEBYTE_CMD;
+  }
+  /* Set chip select Low at the start of the transmission */
+  ACCELERO_CS_LOW();
+  
+  /* Send the Address of the indexed register */
+  SPIx_WriteRead(WriteAddr);
+  
+  /* Send the data that will be written into the device (MSB First) */
+  while(NumByteToWrite >= 0x01)
+  {
+    SPIx_WriteRead(*pBuffer);
+    NumByteToWrite--;
+    pBuffer++;
+  }
+  
+  /* Set chip select High at the end of the transmission */ 
+  ACCELERO_CS_HIGH();
+}
+
+/**
+  * @brief  Reads a block of data from the Accelerometer.
+  * @param  pBuffer: pointer to the buffer that receives the data read from the Accelerometer.
+  * @param  ReadAddr: Accelerometer's internal address to read from.
+  * @param  NumByteToRead: number of bytes to read from the Accelerometer.
+  * @retval None
+  */
+void ACCELERO_IO_Read(uint8_t *pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
+{  
+  if(NumByteToRead > 0x01)
+  {
+    ReadAddr |= (uint8_t)( READWRITE_CMD | MULTIPLEBYTE_CMD );
+  }
+  else
+  {
+    ReadAddr |= (uint8_t)READWRITE_CMD;
+  }
+  /* Set chip select Low at the start of the transmission */
+  ACCELERO_CS_LOW();
+  
+  /* Send the Address of the indexed register */
+  SPIx_WriteRead(ReadAddr);
+  
+  /* Receive the data that will be read from the device (MSB First) */
+  while(NumByteToRead > 0x00)
+  {
+    /* Send dummy byte (0x00) to generate the SPI clock to ACCELEROMETER (Slave device) */
+    *pBuffer = SPIx_WriteRead( DUMMY_BYTE );
+    NumByteToRead--;
+    pBuffer++;
+  }
+  
+  /* Set chip select High at the end of the transmission */ 
+  ACCELERO_CS_HIGH();
 }
 
 /* USER CODE END 4 */
